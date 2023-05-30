@@ -1,0 +1,29 @@
+{
+    "javascript.suggestionActions.enabled": false,
+    "material-icon-theme.folders.associations": {
+        "tailwind": "css",
+        "express": "src",
+        "h12": "lib",
+        "system": "import",
+        "drive": "core",
+        "installed": "app",
+        "program": "app",
+        "resolve": "config",
+        "media": "audio",
+        "menu": "app",
+        "form": "vm",
+
+        "c": "shared",
+        "polygonos.v5": "vm",
+        "polygonos": "vm",
+        "v5": "core",
+
+        "application": "app",
+        "desktop": "cluster",
+        "taskbar": "cluster",
+        "boot": "queue",
+        "login": "cluster",
+
+        "user": "shared"
+    }
+}
