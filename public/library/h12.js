@@ -1,1 +1,264 @@
-let Method={};Method.List={};class Component{constructor(){this.id=`c-${Math.random().toString(36).slice(6)}`,this.parent={},this.child={},this.binding={"@e":{}},this.root=null,this.wait=!0,this.args={}}async init(){}async render(){return document.createElement("div")}Unique(t="",e={}){this.root.querySelectorAll(`[${t}]`).forEach(i=>{let n="x"+Math.random().toString(36).slice(6);e[i.getAttribute(t)]=i,i.setAttribute(t,n)})}async _cx(t=null,e=""){if(!(t instanceof Object))return document.createTextNode("");{let i=new t;return e instanceof Object&&void 0!==(e=void 0!==e.args?e.args:e).id&&(i.id=e.id),i.parent[this.id]=this,i.args=e,this.child[i.id]=i,await i._init(null,e)}}_nx(t=null,e="",i={}){let n="x"+Math.random().toString(36).slice(6),r=null,a=!1;if("t"===t)-1==e.indexOf("{")?r=document.createTextNode(e):((r=document.createElement("span")).innerText=e,r.classList.add(n),this._bx(e,`.${n}`,2));else{for(let s in r=document.createElement(t),i){let o=i[s];if(o instanceof Object){for(let l in o){let d=(r.hasAttribute(l)?r.getAttribute(l):"")+o[l].toString();-1!==d.indexOf("{")&&(_bax.bind(this)(d,l,n),a=!0),r.setAttribute(l,d)}continue}-1!==(o=(r.hasAttribute(s)?r.getAttribute(s):"")+o.toString()).indexOf("{")&&(_bax.bind(this)(o,s,n),a=!0),r.setAttribute(s,o)}e instanceof Array?e.forEach(t=>{r.appendChild(t)}):(r.innerHTML=e,-1!==e.indexOf("{")&&(this._bx.bind(this)(e,`.${n}`,2),a=!0)),a&&r.classList.add(n)}return r}_bx(t,e,i,n={}){void 0===this.binding[t]&&(this.binding[t]={value:t,e:[]}),void 0===this.binding["@e"][e]&&(this.binding["@e"][e]={}),1==i&&("class"==n.attr&&(n.data+=` ${e.replace(/\./g,"")}`),void 0===this.binding["@e"][e][n.attr]&&(this.binding["@e"][e][n.attr]={},this.binding["@e"][e][n.attr]["@value"]=n.data,this.binding["@e"][e][n.attr]["@key"]=[]),this.binding["@e"][e][n.attr]["@key"].push(t),delete n.data),this.binding[t].e.push({type:i,node:e,...n})}Set(t="",e=""){let i=this.binding[t.replace("++","")];if(void 0!==i){let n=i.e;for(var r=0,a=n.length;r<a;r++){let s=n[r];if(1==s.type){let o=s.node,l=this.binding["@e"][o],d=this.root.classList.contains(o.replace(".",""))?this.root:this.root.querySelector(o);if(void 0===l||void 0===l[s.attr]||null==d)continue;let h=l[s.attr]["@value"],c=l[s.attr]["@key"];if("function"==typeof e){let u=`e-${Math.random().toString(36).slice(6)}`;Method.List[u]={event:e.bind(this),e:o[r].selector},e=`hxh.List["${u}"].event();`}h=h.replace(RegExp(t.replace("++",""),"g"),e),c.forEach(t=>{h=h.replace(RegExp(t,"g"),this.binding[t].value)}),d.setAttribute(s.attr,h)}else if(2==s.type){let f=this.root.classList.contains(s.node.replace(".",""))?this.root:this.root.querySelector(s.node);if(null==f)continue;let b=t.indexOf("++");e instanceof Element?(-1!==b?f.insertAdjacentElement(0==b?"afterbegin":"beforeend",e):(f.childNodes.forEach(t=>t.remove()),f.appendChild(e)),e=e.outerHTML):-1!==b?(f.insertAdjacentHTML(0==b?"afterbegin":"beforeend",e),e=i.value+e):f.innerHTML=e}}i.value=e}}Get(t){let e=this.binding[t];return void 0!==e?e.value:null}Style(t={}){let e="";for(var i in t)e+=`${i}:${t[i]};`;return e}async _init(t=null,e={}){if(this.root="function"==typeof this.warp?await this.warp():await this.render(),this.wait?await this.init(e):this.init(e),null==t)return this.root;document.querySelector(t).appendChild(this.root)}}function _bax(t,e,i){let n=t.match(/{\w\S+?}/gm);if(null!==n){let r=[];n.forEach(n=>{r.includes(n)||(this._bx(n,`.${i}`,1,{data:t,attr:e}),r.push(n))})}}Component.Render=async function(t=null,e={},i=""){let n=new t;await n._init(i,e)},window.hxc=Component,window.hxh=Method;export default{Component,Method};
+window.$fx = {};
+
+class Component {
+    constructor() {
+        this.id = crypto.randomUUID();
+        this.binding = {};
+        this.root = null;
+        this.parent = null;
+        this.child = {};
+        this.element = {};
+        this.args = {};
+    }
+    async render() {
+        return this.node("div");
+    }
+    async pre(element = null, args = {}) {
+
+        this.root = await this.render();
+        await this.init(args);
+        
+        if(element == null) {
+            return this.root;
+        };
+
+        document.querySelector(element).append(this.root);
+
+    }
+    async init(args = {}) {
+
+    }
+    /**
+        * `bind()` or `fx()`: Used to bind dynamic event to the element before rendering
+        * @param event
+        * @returns `string`
+    */
+    bind(event = null) {
+
+        let _id = crypto.randomUUID();
+        $fx[_id] = event.bind(this);
+        return `$fx['${_id}']();`;
+
+    }
+    /**
+        * `component()` or `cx()`: Used to render component inside another component
+        * @param node `H12.Component`
+        * @param args `any`
+        * @returns `Element`
+    */
+    async component(node = null, args = {}) {
+
+        if(node instanceof Object) {
+
+            const _component = new node();
+            _component.parent = this;
+            _component.args = args;
+
+            this.child[_component.id] = _component;
+
+            return await _component.pre(null, args);
+
+        }
+
+    }
+    /**
+        * node() or nx(): Used to create element for the component
+        * @param {*} type
+        * @param {*} child
+        * @param {*} attribute
+        * @returns 
+    */
+    node(type = "", child = [], attribute = {}) {
+
+        let _id = "x" + Math.random().toString(36).slice(6);
+        let _element = document.createElement(type);
+        let _set = [];
+        let _bind = false;
+
+        for(var i = 0, ilen = child.length; i < ilen; i++) {
+
+            if(typeof(child[i]) === "string") {
+
+                let _match = child[i].match(/{.*?}/g);
+
+                if(_match !== null) {
+                    if(typeof(this.binding[_match[0]]) === "undefined") {
+                        this.binding[_match[0]] = { element: [], data: _match[0] };
+                    };
+                    //type = 0 then innerhtml
+                    this.binding[_match[0]].element.push({ id: _id, type: 0, map: child[i] });
+                    _bind = true;
+                };
+
+            };
+
+            _element.append(child[i]);
+
+        };
+
+        for(const key in attribute) {
+            let _value = attribute[key];
+
+            if(typeof(_value) === "function") {
+                _value = this.bind(_value);
+            }
+            else if(typeof(_value) === "object") {
+
+                for(const skey in _value) {
+                    
+                    let _attribute = ((_element.hasAttribute(skey)) ? _element.getAttribute(skey) : "") + _value[skey].toString();
+
+                    if(_attribute.indexOf("{") !== -1) {
+                        _set.push(skey);
+                        _bind = true;
+                    };
+
+                    _element.setAttribute(skey, _attribute);
+
+                };
+
+                continue;
+
+            }
+            else if(typeof(_value) === "string") {
+
+                if(_value.indexOf("{") !== -1) {
+                    _set.push(key);
+                    _bind = true;
+                };
+
+            };
+
+            _element.setAttribute(key, _value);
+        };
+
+        let _unique = [...new Set(_set)];
+
+        for(var i = 0, ilen = _unique.length; i < ilen; i++) {
+
+            let _value = _element.getAttribute(_unique[i]);
+            let _match = _value.match(/{.*?}/g);
+
+            if(_match !== null) {
+                for(var j = 0, jlen = _match.length; j < jlen; j++) {
+
+                    if(typeof(this.binding[_match[j]]) === "undefined") {
+                        this.binding[_match[j]] = { element: [], data: _match[i] };
+                    };
+                    this.binding[_match[j]].element.push({ id: _id, type: _unique[i], map: _value + ((_unique[i] === "class") ? ` ${_id}` : "") });
+
+                };
+            };
+
+        };
+
+        if(_bind) {
+            _element.classList.add(_id);
+        };
+
+        return _element;
+
+    }
+    Set(key = "", value = "") {
+
+        let _index = key.indexOf("++");
+        key = key.replace("++", "");
+
+        let _bind = this.binding[key];
+        if(typeof(_bind) === "undefined") {
+            return null;
+        };
+
+        if(typeof(value) === "function") {
+            value = this.bind(value);
+        };
+
+        let _element = _bind.element;
+        for(var i = 0, ilen = _element.length; i < ilen; i++) {
+
+            let _map = _element[i].map;
+            let _node = (this.root.classList.contains(_element[i].id)) ? this.root : this.root.querySelector(`.${_element[i].id}`);
+
+            //if type == 0 then innerhtml
+            //else attribute
+            if(_element[i].type == 0) {
+
+                let _position = (_index == 0) ? "afterbegin" : "beforeend";
+
+                if(value instanceof Element) {
+
+                    if(_index !== -1) {
+                        _node.insertAdjacentElement(_position, value);
+                    }
+                    else {
+                        _node.childNodes.forEach(x => x.remove());
+                        _node.appendChild(value);
+                    };
+
+                    value = value.outerHTML;
+
+                }
+                else {
+                    
+                    if(_index !== -1) {
+                        _node.insertAdjacentHTML(_position, value);
+                    }
+                    else {
+                        _node.innerHTML = value;
+                    };
+
+                };
+
+            }
+            else {
+
+                let _match = _map.match(/{.*?}/g);
+                if(_match !== null) {
+                    for(var j = 0, jlen = _match.length; j < jlen; j++) {
+
+                        if(_match[j] === key) {
+                            _map = _map.replace(_match[j], value);
+                            continue;
+                        };
+
+                        let _sub_bind = this.binding[_match[j]];
+                        
+                        if(typeof(_sub_bind) === "undefined") {
+                            continue;
+                        };
+
+                        _map = _map.replace(_match[j], _sub_bind.data);
+
+                    };
+                };
+
+                _node.setAttribute(_element[i].type, _map);
+
+            };
+
+        };
+
+        _bind.data = value;
+
+    }
+    Get(key = "") {
+        return typeof(this.binding[key]) === "undefined" ? null : this.binding[key].data;
+    }
+    Unique(_unique = "id", _object = this.element) {
+
+        let _element = this.root.querySelectorAll(`[${_unique}]`);
+        _element.forEach(x => {
+            let _id = "x" + Math.random().toString(36).slice(6);
+            _object[x.getAttribute(_unique)] = x;
+            x.setAttribute(_unique, _id);
+        });
+
+    }
+};
+
+Component.Render = async function(component = null, args = null, element = {}) {
+    const _component = new component();
+    await _component.pre(element, args);
+};
+
+export default Component;

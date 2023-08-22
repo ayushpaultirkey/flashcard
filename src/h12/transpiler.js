@@ -1,5 +1,3 @@
-const fs = require("fs");
-const path = require("path");
 const jsdom = require("jsdom");
 
 const Transpiler = {};
@@ -13,7 +11,7 @@ Transpiler.JIT = function(_string = "") {
 
     //Remove @Component from string
     _string = _string.replace("@Component", "");
-
+    
     //Match all dynamic tags
     const _match_tag = _string.matchAll(/<(\w+)\s+args(?:=|)(?:{{(.*?)}}|).*?\/>/gm);
     for(const _key of _match_tag) {
@@ -27,10 +25,9 @@ Transpiler.JIT = function(_string = "") {
             };
         };
 
-        _string = _string.replace(_key[0], `<${_key[1]} hx-app="${_key[1]}" scope="${_scope}" args="{${((typeof(_key[2]) !== "undefined")) ? _key[2].replace(/"/g, "'") : ""}}"></${_key[1]}>`);
+        _string = _string.replace(_key[0], `<hx-app name="${_key[1]}" scope="${_scope}" args="{${((typeof(_key[2]) !== "undefined")) ? _key[2].replace(/"/g, "'") : ""}}"></hx-app>`);
         
     };
-
 
     //Match all template
     const _match_bracket = _string.matchAll(/<>(.*?)<\/>/gs);
@@ -49,125 +46,122 @@ Transpiler.JIT = function(_string = "") {
 
         //
         let _dom = new jsdom.JSDOM(_key[1]);
-        let _transpiled = this.DOMConstruct(_dom.window.document.body.children[0]);
+        let _transpiled = this.DOMPhrase(_dom.window.document.body.children[0]);
         _string = _string.replace(_key[0], _transpiled);
     
     };
 
     //Match all dynamic tags
-    const _match_dyn = _string.matchAll(/<(\w+).*?args(?:=|)(?:.{(.*?)}.|)>.*?<\/\w+>/gm);
+    const _match_dyn = _string.matchAll(/<hx\-app.*?args(?:=|)(?:.{(.*?)}.|)>.*?<\/hx\-app>/gm);
     for(const _key of _match_dyn) {
     
+        //let _dom = new jsdom.JSDOM(_key[0]);
+        //let _tr = this.DOMPhrase(_dom.window.document.body.children[0]);
+
         let _dom = new jsdom.JSDOM(_key[0]);
-        _string = _string.replace(_key[0], this.DOMConstruct(_dom.window.document.body.children[0]));
-        //_string = _string.replace(_key[0], `await this._cx(${_key[1]}${((_key[2].length > 0) ? `, {${_key[2]}}` : "")})`);
-    
+        _string = _string.replace(_key[0], this.DOMPhrase(_dom.window.document.body.children[0]));
+
+        //_string = _string.replace(_key[0], _tr.replace(/await\s+this\.component\(/g, "").replace(")", ""));
+        
     };
 
-    //Get all Render() function
-    if(_string.indexOf("Render") !== -1) {
-
-        const _match_render = _string.match(/Render(\((?:[^)(]|\((?:[^)(]|\((?:[^)(]|\([^)(]*\))*\))*\))*\))/gms);
-        for(var i = 0, ilen = _match_render.length; i < ilen; i++) {
-
-            _string = _string.replace(_match_render[i], _match_render[i].replace(/await\s+this\._cx\(/g, "").replace(")", ""));
-
-        };
-
-    };
-
-    
     //
     return _string;
 
 };
 
 
-Transpiler.DOMConstruct = function(_element = document.body) {
 
-    let _children = _element.children;
-    let _child = _element.childNodes;
-    let _child_code = "";
+Transpiler.DOMPhrase = function(_element = document.body) {
 
-    let _args = "";
-    let _scope = "";
-    let _component = false;
-    let _name = "";
+    const _attribute = _element.getAttributeNames();
+    const _children = _element.children;
+    const _child = _element.childNodes;
 
+    if(_element.tagName.toLowerCase() === "hx-app") {
+
+        const _name = _element.getAttribute("name");
+        const _args = _element.getAttribute("args");
+        const _scope = _element.getAttribute("scope").replace(/ /g, "");
+
+        return `await ${_scope.length == 0 ? "this" : _scope}.component(${_name},${_args})`.replace(/,\]/g, "]");
+    
+    };
+
+    //
     let _attribute_value = "{";
-    let _attribute = _element.getAttributeNames();
-    _attribute.forEach(x => {
-        let _value = _element.getAttribute(x);
 
+    _attribute.forEach(x => {
+
+        let _value = _element.getAttribute(x);
+        
         if(_value.indexOf("...") !== -1) {
-            _attribute_value += `"${x}":${_element.getAttribute(x)},`;
+            _attribute_value += `"${x}":${_value},`;
         }
         else {
-            if(x == "hx-app") {
-                _component = true;
-                _name = _element.getAttribute(x);
-                _args = _element.getAttribute("args");
-                _scope = _element.getAttribute("scope").replace(/ /g, "");
-            }
-            else {
-                _attribute_value += `"${x}":"${_element.getAttribute(x)}",`;
-            }
+            _attribute_value += `"${x}":"${_value}",`;
         };
         
     });
+
     _attribute_value += "}";
     _attribute_value = _attribute_value.replace(",}", "}");
     _attribute_value = ((_attribute_value == "{}") ? "" : "," + _attribute_value);
 
-    if(_component) {
-        return `await ${_scope.length == 0 ? "this" : _scope}._cx(${_name},${_args})`.replace(/,\]/g, "]");
-    };
-    
+    //
+    let _child_code = "";
 
+    //Check all current element child node
     for(var i = 0, ilen = _child.length; i < ilen; i++) {
 
+        //Check if current node is text node
         if(_child[i].nodeType == 3) {
 
+            //Check if the text node is not empty
             let _match = _child[i].nodeValue.match(/\w+/g);
-
             if(_match !== null) {
 
+                //Remove extra space from string
                 let _value = _child[i].nodeValue.replace(/\n|\s\s/g, "");
                 let _test = "";
 
+                //If node value is not empty then check for any key and split them into individual nodes
                 if(_match.length > 1 || _children.length > 0) {
-                    
                     if(_value.indexOf("{") !== -1) {
+
                         let _split = _value.split(/{.*?}/g);
                         let _key = _value.match(/{.*?}/g);
-    
+
+                        //Iterate for all key
                         for(var j = 0, jlen = _split.length; j < jlen; j++) {
     
                             if(_split[j] !== "" && _split[j] !== " ") {
-                                _test += `this._nx("t",\`${_split[j]}\`),`;
+                                _test += `this.node("span",[\`${_split[j]}\`]),`;
                             };
-                            _test += ((typeof(_key[j]) !== "undefined") ? `this._nx("t",\`${_key[j]}\`),` : "");
+                            _test += ((typeof(_key[j]) !== "undefined") ? `this.node("span",[\`${_key[j]}\`]),` : "");
     
                         };
+
                     }
                     else {
-                        _test += `this._nx("t",\`${_child[i].nodeValue}\`),`;
-                    }
-
+                        _test += `this.node("span",[\`${_child[i].nodeValue}\`]),`;
+                    };
                 }
                 else {
-                    _test += `\`${_value}\``;
+                    _test += `[\`${_value}\`]`;
                 };
 
                 _child_code += _test;
-                
+
             };
+
         }
         else {
-            _child_code += this.DOMConstruct(_child[i]) + ",";
-        };
+            _child_code += this.DOMPhrase(_child[i]) + ",";
+        }
 
     };
+
 
     if(_child_code.indexOf(",") !== -1) {
         _child_code = `[${_child_code}]`;
@@ -175,14 +169,11 @@ Transpiler.DOMConstruct = function(_element = document.body) {
     else {
         if(_child_code == "") {
             _child_code = "[]";
-        }
-        //
-    }
-
-    //
-    let _code = `this._nx("${_element.tagName.toLowerCase()}",${_child_code}${_attribute_value})`;
+        };
+    };
     
-    //
+    let _code = `this.node("${_element.tagName.toLowerCase()}",${_child_code}${_attribute_value})`;
+    
     return _code.replace(/,\]/g, "]").replace(/,,/g, ",");
 
 };

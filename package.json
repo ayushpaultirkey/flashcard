@@ -1,7 +1,7 @@
 {
   "name": "flashcard",
   "version": "1.0.0",
-  "description": "",
+  "description": "A small social media website to share posts",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
@@ -11,10 +11,14 @@
   "license": "ISC",
   "dependencies": {
     "body-parser": "^1.20.2",
+    "cookie-encrypter": "^1.0.1",
+    "cookie-parser": "^1.4.6",
+    "date-and-time": "^3.0.2",
     "express": "^4.18.2",
     "express-session": "^1.17.3",
     "jsdom": "^22.1.0",
     "mime": "^3.0.0",
+    "mysql": "^2.18.1",
     "nodemon": "^2.0.22",
     "tailwindcss": "^3.3.2"
   }
